@@ -33,7 +33,7 @@ func main() {
 
 	// Custom flag for route mappings
 	var routeFlags utils.ArrayFlags
-	flag.Var(&routeFlags, "r", "Route mapping in format host:port (can be used multiple times)")
+	flag.Var(&routeFlags, "r", "Route mapping in format target_ip:target_port-listen_port (can be used multiple times)")
 
 	flag.Parse()
 
@@ -43,18 +43,24 @@ func main() {
 
 	// Parse route mappings
 	for _, mapping := range routeFlags {
-		if !strings.Contains(mapping, ":") {
-			log.Fatalf("Invalid route mapping format: %s. Expected format: host:port", mapping)
+		// Split by "-" to separate target and listen parts
+		parts := strings.SplitN(mapping, "-", 2)
+		if len(parts) != 2 {
+			log.Fatalf("Invalid route mapping format: %s. Expected format: target_ip:target_port-listen_port", mapping)
 		}
 
-		parts := strings.Split(mapping, ":")
-		if len(parts) != 2 {
-			log.Fatalf("Invalid route mapping format: %s. Expected format: host:port", mapping)
+		targetPart := parts[0]
+		listenPort := parts[1]
+
+		// Parse target part (ip:port)
+		targetHost, targetPort, err := net.SplitHostPort(targetPart)
+		if err != nil {
+			log.Fatalf("Invalid target address format: %s. Expected format: ip:port", targetPart)
 		}
 
 		mappings = append(mappings, RouteMapping{
-			LocalAddr:  mapping,
-			RemotePort: parts[1],
+			LocalAddr:  net.JoinHostPort(targetHost, targetPort),
+			RemotePort: listenPort,
 		})
 	}
 

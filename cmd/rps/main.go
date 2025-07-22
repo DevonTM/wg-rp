@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"io"
 	"log"
 	"net"
@@ -20,8 +19,7 @@ import (
 
 type ProxyMapping struct {
 	ListenAddr string
-	TargetIP   string
-	TargetPort string
+	TargetAddr string
 }
 
 func main() {
@@ -34,7 +32,7 @@ func main() {
 
 	// Custom flag for proxy mappings
 	var proxyFlags utils.ArrayFlags
-	flag.Var(&proxyFlags, "a", "Proxy mapping in format listen_ip:listen_port:target_ip (can be used multiple times)")
+	flag.Var(&proxyFlags, "a", "Proxy mapping in format listen_ip:listen_port-target_ip:target_port (can be used multiple times)")
 
 	flag.Parse()
 
@@ -44,27 +42,30 @@ func main() {
 
 	// Parse proxy mappings
 	for _, mapping := range proxyFlags {
-		parts := strings.SplitN(mapping, ":", 3)
-		if len(parts) != 3 {
-			log.Fatalf("Invalid proxy mapping format: %s. Expected format: listen_ip:listen_port:target_ip", mapping)
+		// Split by "-" to separate listen and target parts
+		parts := strings.SplitN(mapping, "-", 2)
+		if len(parts) != 2 {
+			log.Fatalf("Invalid proxy mapping format: %s. Expected format: listen_ip:listen_port-target_ip:target_port", mapping)
 		}
 
-		listenIP := parts[0]
-		listenPort := parts[1]
-		targetIP := parts[2]
+		listenPart := parts[0]
+		targetPart := parts[1]
 
-		// If listen IP is empty, listen on all addresses
-		var listenAddr string
-		if listenIP == "" {
-			listenAddr = ":" + listenPort
-		} else {
-			listenAddr = listenIP + ":" + listenPort
+		// Parse listen part (ip:port)
+		listenHost, listenPort, err := net.SplitHostPort(listenPart)
+		if err != nil {
+			log.Fatalf("Invalid listen address format: %s. Expected format: ip:port or :port", listenPart)
+		}
+
+		// Parse target part (ip:port)
+		targetHost, targetPort, err := net.SplitHostPort(targetPart)
+		if err != nil {
+			log.Fatalf("Invalid target address format: %s. Expected format: ip:port", targetPart)
 		}
 
 		mappings = append(mappings, ProxyMapping{
-			ListenAddr: listenAddr,
-			TargetIP:   targetIP,
-			TargetPort: listenPort, // Target port is same as listen port
+			ListenAddr: net.JoinHostPort(listenHost, listenPort),
+			TargetAddr: net.JoinHostPort(targetHost, targetPort),
 		})
 	}
 
@@ -131,8 +132,8 @@ func startProxyServer(mapping ProxyMapping, tnet *netstack.Net) {
 	}
 	defer listener.Close()
 
-	log.Printf("Proxy server listening on %s, forwarding to %s:%s",
-		mapping.ListenAddr, mapping.TargetIP, mapping.TargetPort)
+	log.Printf("Proxy server listening on %s, forwarding to %s",
+		mapping.ListenAddr, mapping.TargetAddr)
 
 	for {
 		conn, err := listener.Accept()
@@ -149,15 +150,14 @@ func handleConnection(clientConn net.Conn, mapping ProxyMapping, tnet *netstack.
 	defer clientConn.Close()
 
 	// Connect to target through WireGuard tunnel
-	targetAddr := fmt.Sprintf("%s:%s", mapping.TargetIP, mapping.TargetPort)
-	tunnelConn, err := tnet.Dial("tcp", targetAddr)
+	tunnelConn, err := tnet.Dial("tcp", mapping.TargetAddr)
 	if err != nil {
-		log.Printf("Failed to connect to target %s: %v", targetAddr, err)
+		log.Printf("Failed to connect to target %s: %v", mapping.TargetAddr, err)
 		return
 	}
 	defer tunnelConn.Close()
 
-	log.Printf("Established connection: %s -> %s", clientConn.RemoteAddr(), targetAddr)
+	log.Printf("Established connection: %s -> %s", clientConn.RemoteAddr(), mapping.TargetAddr)
 
 	// Bidirectional copy
 	var wg sync.WaitGroup
@@ -176,5 +176,5 @@ func handleConnection(clientConn net.Conn, mapping ProxyMapping, tnet *netstack.
 	}()
 
 	wg.Wait()
-	log.Printf("Connection closed: %s -> %s", clientConn.RemoteAddr(), targetAddr)
+	log.Printf("Connection closed: %s -> %s", clientConn.RemoteAddr(), mapping.TargetAddr)
 }
