@@ -42,7 +42,7 @@ func main() {
 
 	// Parse proxy mappings
 	for _, mapping := range proxyFlags {
-		parts := strings.Split(mapping, ":")
+		parts := strings.SplitN(mapping, ":", 3)
 		if len(parts) != 3 {
 			log.Fatalf("Invalid proxy mapping format: %s. Expected format: listen_ip:listen_port:target_ip", mapping)
 		}
@@ -72,20 +72,14 @@ func main() {
 		log.Fatalf("Failed to read config file %s: %v", configFile, err)
 	}
 
-	// Extract IP address from config
-	interfaceIP, err := utils.GetInterfaceIP(string(config))
+	// Parse WireGuard config in one pass
+	wgConfig, err := utils.ParseWireGuardConfig(string(config))
 	if err != nil {
-		log.Fatalf("Failed to get interface IP: %v", err)
-	}
-
-	// Extract MTU from config
-	mtu, err := utils.GetMTU(string(config))
-	if err != nil {
-		log.Fatalf("Failed to get MTU: %v", err)
+		log.Fatalf("Failed to parse WireGuard config: %v", err)
 	}
 
 	// Create netstack device with the interface IP and MTU
-	tun, tnet, err := netstack.CreateNetTUN([]netip.Addr{interfaceIP}, []netip.Addr{}, mtu)
+	tun, tnet, err := netstack.CreateNetTUN(wgConfig.InterfaceIPs, []netip.Addr{}, wgConfig.MTU)
 	if err != nil {
 		log.Fatalf("Failed to create netstack: %v", err)
 	}
@@ -95,12 +89,7 @@ func main() {
 	dev := device.NewDevice(tun, bind, device.NewLogger(device.LogLevelVerbose, ""))
 
 	// Configure the device
-	ipcConfig, err := utils.ConvertConfigToIPC(string(config))
-	if err != nil {
-		log.Fatalf("Failed to convert config to IPC format: %v", err)
-	}
-
-	err = dev.IpcSet(ipcConfig)
+	err = dev.IpcSet(wgConfig.IPCConfig)
 	if err != nil {
 		log.Fatalf("Failed to configure WireGuard device: %v", err)
 	}

@@ -62,20 +62,14 @@ func main() {
 		log.Fatalf("Failed to read config file %s: %v", configFile, err)
 	}
 
-	// Extract IP address from config
-	interfaceIP, err := utils.GetInterfaceIP(string(config))
+	// Parse WireGuard config in one pass
+	wgConfig, err := utils.ParseWireGuardConfig(string(config))
 	if err != nil {
-		log.Fatalf("Failed to get interface IP: %v", err)
-	}
-
-	// Extract MTU from config
-	mtu, err := utils.GetMTU(string(config))
-	if err != nil {
-		log.Fatalf("Failed to get MTU: %v", err)
+		log.Fatalf("Failed to parse WireGuard config: %v", err)
 	}
 
 	// Create netstack device with the interface IP and MTU
-	tun, tnet, err := netstack.CreateNetTUN([]netip.Addr{interfaceIP}, []netip.Addr{}, mtu)
+	tun, tnet, err := netstack.CreateNetTUN(wgConfig.InterfaceIPs, []netip.Addr{}, wgConfig.MTU)
 	if err != nil {
 		log.Fatalf("Failed to create netstack: %v", err)
 	}
@@ -85,12 +79,7 @@ func main() {
 	dev := device.NewDevice(tun, bind, device.NewLogger(device.LogLevelVerbose, ""))
 
 	// Configure the device
-	ipcConfig, err := utils.ConvertConfigToIPC(string(config))
-	if err != nil {
-		log.Fatalf("Failed to convert config to IPC format: %v", err)
-	}
-
-	err = dev.IpcSet(ipcConfig)
+	err = dev.IpcSet(wgConfig.IPCConfig)
 	if err != nil {
 		log.Fatalf("Failed to configure WireGuard device: %v", err)
 	}
@@ -103,23 +92,26 @@ func main() {
 
 	log.Printf("WireGuard client started with %d route mappings", len(mappings))
 
-	// Start route listeners
+	// Start route listeners for each interface IP
 	var wg sync.WaitGroup
 	for _, mapping := range mappings {
-		wg.Add(1)
-		go func(m RouteMapping) {
-			defer wg.Done()
-			startRouteListener(m, interfaceIP.String(), tnet)
-		}(mapping)
+		for _, ip := range wgConfig.InterfaceIPs {
+			wg.Add(1)
+			go func(m RouteMapping, wgIP netip.Addr) {
+				defer wg.Done()
+				startRouteListener(m, wgIP, tnet)
+			}(mapping, ip)
+		}
 	}
 
 	wg.Wait()
 }
 
-func startRouteListener(mapping RouteMapping, wgIP string, tnet *netstack.Net) {
-	listenAddr := fmt.Sprintf("%s:%s", wgIP, mapping.RemotePort)
+func startRouteListener(mapping RouteMapping, wgIP netip.Addr, tnet *netstack.Net) {
+	wgIPStr := wgIP.String()
+	listenAddr := fmt.Sprintf("%s:%s", wgIPStr, mapping.RemotePort)
 	listener, err := tnet.ListenTCP(&net.TCPAddr{
-		IP:   net.ParseIP(wgIP),
+		IP:   net.ParseIP(wgIPStr),
 		Port: utils.ParsePort(mapping.RemotePort),
 	})
 	if err != nil {
