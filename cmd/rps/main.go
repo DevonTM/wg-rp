@@ -27,8 +27,10 @@ type ProxyMapping struct {
 func main() {
 	var configFile string
 	var mappings []ProxyMapping
+	var verbose bool
 
 	flag.StringVar(&configFile, "c", "wg.conf", "WireGuard configuration file")
+	flag.BoolVar(&verbose, "v", false, "Enable verbose logging")
 
 	// Custom flag for proxy mappings
 	var proxyFlags utils.ArrayFlags
@@ -86,7 +88,14 @@ func main() {
 
 	// Create WireGuard device
 	bind := conn.NewDefaultBind()
-	dev := device.NewDevice(tun, bind, device.NewLogger(device.LogLevelVerbose, ""))
+
+	// Set log level based on verbose flag
+	logLevel := device.LogLevelError
+	if verbose {
+		logLevel = device.LogLevelVerbose
+	}
+
+	dev := device.NewDevice(tun, bind, device.NewLogger(logLevel, ""))
 
 	// Configure the device
 	err = dev.IpcSet(wgConfig.IPCConfig)
