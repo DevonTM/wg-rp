@@ -126,7 +126,21 @@ func main() {
 }
 
 func startProxyServer(mapping ProxyMapping, tnet *netstack.Net) {
-	listener, err := net.Listen("tcp", mapping.ListenAddr)
+	network := "tcp"
+	laddr, err := net.ResolveTCPAddr(network, mapping.ListenAddr)
+	if err != nil {
+		log.Fatalf("Failed to resolve listen address %s: %v", mapping.ListenAddr, err)
+	}
+
+	if strings.Split(mapping.ListenAddr, ":")[0] == "" {
+		network = "tcp"
+	} else if laddr.IP.To4() != nil {
+		network = "tcp4"
+	} else {
+		network = "tcp6"
+	}
+
+	listener, err := net.ListenTCP(network, laddr)
 	if err != nil {
 		log.Fatalf("Failed to listen on %s: %v", mapping.ListenAddr, err)
 	}
