@@ -42,3 +42,14 @@ func FormatDuration(d time.Duration) string {
 		return fmt.Sprintf("%d minutes %d seconds", minutes, seconds)
 	}
 }
+
+// FormatDateTime formats a time.Time object into a string in the format "YYYY-MM-DD HH:MM:SS"
+func FormatDateTime(t time.Time) string {
+	return t.Format("2006-01-02 15:04:05")
+}
+
+// FormatDateTimeFromUnix formats a Unix timestamp into a string in the format "YYYY-MM-DD HH:MM:SS"
+func FormatDateTimeFromUnix(ts int64) string {
+	t := time.Unix(ts, 0)
+	return FormatDateTime(t)
+}

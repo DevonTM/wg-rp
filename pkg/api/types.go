@@ -21,6 +21,7 @@ type HeartbeatRequest struct {
 
 // HeartbeatResponse represents the response to a heartbeat request
 type HeartbeatResponse struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
+	Success           bool   `json:"success"`
+	Message           string `json:"message"`
+	ServerStartupTime int64  `json:"server_startup_time"`
 }

@@ -19,10 +19,11 @@ import (
 
 // ProxyServer manages port mappings and proxy connections
 type ProxyServer struct {
-	tnet     *netstack.Net
-	mappings map[int]*ProxyMapping  // port -> mapping
-	clients  map[string]*ClientInfo // clientIP -> client info
-	mu       sync.RWMutex
+	tnet        *netstack.Net
+	mappings    map[int]*ProxyMapping  // port -> mapping
+	clients     map[string]*ClientInfo // clientIP -> client info
+	mu          sync.RWMutex
+	startupTime time.Time
 }
 
 // ClientInfo tracks information about connected clients
@@ -44,9 +45,10 @@ type ProxyMapping struct {
 // NewProxyServer creates a new proxy server
 func NewProxyServer(tnet *netstack.Net) *ProxyServer {
 	return &ProxyServer{
-		tnet:     tnet,
-		mappings: make(map[int]*ProxyMapping),
-		clients:  make(map[string]*ClientInfo),
+		tnet:        tnet,
+		mappings:    make(map[int]*ProxyMapping),
+		clients:     make(map[string]*ClientInfo),
+		startupTime: time.Now(),
 	}
 }
 
@@ -390,8 +392,9 @@ func (ps *ProxyServer) handleHeartbeat(w http.ResponseWriter, r *http.Request) {
 	client.LastHeartbeat = time.Now()
 
 	response := api.HeartbeatResponse{
-		Success: true,
-		Message: "Heartbeat received",
+		Success:           true,
+		Message:           "Heartbeat received",
+		ServerStartupTime: ps.startupTime.Unix(),
 	}
 
 	w.Header().Set("Content-Type", "application/json")

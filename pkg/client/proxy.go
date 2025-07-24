@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"wg-rp/pkg/api"
+	"wg-rp/pkg/utils"
 
 	"golang.zx2c4.com/wireguard/tun/netstack"
 )
@@ -37,6 +38,7 @@ type ProxyClient struct {
 	heartbeatFailures int
 	maxHeartbeatFails int
 	shutdownChan      chan struct{}
+	serverStartupTime int64
 }
 
 // NewProxyClient creates a new proxy client
@@ -365,6 +367,25 @@ func (pc *ProxyClient) sendHeartbeat() error {
 	if !response.Success {
 		return fmt.Errorf("heartbeat rejected: %s", response.Message)
 	}
+
+	// Check for server restart
+	if pc.serverStartupTime != 0 && response.ServerStartupTime != pc.serverStartupTime {
+		log.Printf("Server restart detected! Previous startup: %s, Current startup: %s",
+			utils.FormatDateTimeFromUnix(pc.serverStartupTime), utils.FormatDateTimeFromUnix(response.ServerStartupTime))
+		log.Printf("Re-registering all %d port mappings...", len(pc.mappings))
+
+		// Re-register all port mappings
+		for _, mapping := range pc.mappings {
+			if err := pc.registerPortMapping(mapping); err != nil {
+				log.Printf("Failed to re-register port mapping for port %d: %v", mapping.RemotePort, err)
+				// Continue trying to register other mappings even if one fails
+			}
+		}
+		log.Printf("Port mapping re-registration completed")
+	}
+
+	// Update the server startup time
+	pc.serverStartupTime = response.ServerStartupTime
 
 	return nil
 }
