@@ -121,14 +121,30 @@ func (ps *ProxyServer) handleCreatePortMapping(w http.ResponseWriter, r *http.Re
 	defer ps.mu.Unlock()
 
 	// Check if port is already mapped
-	if _, exists := ps.mappings[req.RemotePort]; exists {
-		response := api.PortMappingResponse{
-			Success: false,
-			Message: fmt.Sprintf("Port %d is already mapped", req.RemotePort),
+	if mapping, exists := ps.mappings[req.RemotePort]; exists {
+		// If the same client is trying to reclaim its own port, allow it by cleaning up the old mapping first
+		if mapping.ClientIP == req.ClientIP {
+			log.Printf("Client %s is reclaiming its own port %d, cleaning up old mapping", req.ClientIP, req.RemotePort)
+
+			// Stop the existing mapping
+			close(mapping.cancel)
+			mapping.Listener.Close()
+			delete(ps.mappings, req.RemotePort)
+
+			// Remove from client tracking
+			if client, exists := ps.clients[mapping.ClientIP]; exists {
+				delete(client.Mappings, req.RemotePort)
+			}
+		} else {
+			// Port is mapped by a different client
+			response := api.PortMappingResponse{
+				Success: false,
+				Message: fmt.Sprintf("Port %d is already mapped by another client", req.RemotePort),
+			}
+			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(response)
+			return
 		}
-		w.WriteHeader(http.StatusConflict)
-		json.NewEncoder(w).Encode(response)
-		return
 	}
 
 	// Start listening on the requested port

@@ -102,7 +102,7 @@ func main() {
 		// Wait for either server death or manual shutdown signal
 		select {
 		case <-proxyClient.WaitForShutdownSignal():
-			log.Printf("Client stopped due to server shutdown")
+			log.Printf("Client stopped, server may have died or restarted")
 		case <-sigChan:
 			log.Printf("Received shutdown signal, cleaning up...")
 
