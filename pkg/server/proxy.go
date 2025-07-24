@@ -69,8 +69,9 @@ func (ps *ProxyServer) StartAPIServer() error {
 
 	log.Printf("API server listening on :80 within WireGuard netstack")
 
-	// Use Protocols to enable HTTP/2 support
+	// Use Protocols to enable HTTP/1 and HTTP/2 cleartext support
 	protocols := new(http.Protocols)
+	protocols.SetHTTP1(true)
 	protocols.SetUnencryptedHTTP2(true)
 
 	httpServer := &http.Server{
