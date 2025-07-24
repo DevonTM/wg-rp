@@ -7,8 +7,8 @@ import (
 	"log"
 	"time"
 
-	"wg-rp/pkg/api"
-	"wg-rp/pkg/utils"
+	"github.com/DevonTM/wg-rp/pkg/api"
+	"github.com/DevonTM/wg-rp/pkg/utils"
 )
 
 // startHeartbeat starts sending periodic heartbeats to the server

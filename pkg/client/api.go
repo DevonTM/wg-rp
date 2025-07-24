@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 
-	"wg-rp/pkg/api"
+	"github.com/DevonTM/wg-rp/pkg/api"
 )
 
 // registerPortMapping registers a port mapping with the server via REST API

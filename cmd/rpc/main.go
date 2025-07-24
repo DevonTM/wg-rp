@@ -8,10 +8,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	wgrp "wg-rp"
-	"wg-rp/pkg/client"
-	"wg-rp/pkg/utils"
-	"wg-rp/pkg/wireguard"
+	wgrp "github.com/DevonTM/wg-rp"
+	"github.com/DevonTM/wg-rp/pkg/client"
+	"github.com/DevonTM/wg-rp/pkg/utils"
+	"github.com/DevonTM/wg-rp/pkg/wireguard"
 )
 
 func main() {

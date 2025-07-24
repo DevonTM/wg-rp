@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"wg-rp/pkg/api"
+	"github.com/DevonTM/wg-rp/pkg/api"
 )
 
 // StartAPIServer starts the REST API server on port 80 within the WireGuard netstack

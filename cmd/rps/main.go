@@ -6,9 +6,9 @@ import (
 	"log"
 	"os"
 
-	wgrp "wg-rp"
-	"wg-rp/pkg/server"
-	"wg-rp/pkg/wireguard"
+	wgrp "github.com/DevonTM/wg-rp"
+	"github.com/DevonTM/wg-rp/pkg/server"
+	"github.com/DevonTM/wg-rp/pkg/wireguard"
 )
 
 func main() {

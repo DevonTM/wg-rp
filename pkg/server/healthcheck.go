@@ -4,7 +4,7 @@ import (
 	"log"
 	"time"
 
-	"wg-rp/pkg/utils"
+	"github.com/DevonTM/wg-rp/pkg/utils"
 )
 
 // StartHealthChecker starts a background goroutine that periodically checks client health

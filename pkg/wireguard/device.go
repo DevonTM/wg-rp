@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/netip"
 
-	"wg-rp/pkg/config"
+	"github.com/DevonTM/wg-rp/pkg/config"
 
 	"golang.zx2c4.com/wireguard/conn"
 	"golang.zx2c4.com/wireguard/device"

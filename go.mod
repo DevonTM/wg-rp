@@ -1,4 +1,4 @@
-module wg-rp
+module github.com/DevonTM/wg-rp
 
 go 1.24.5
 

@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"wg-rp/pkg/bufferpool"
+	"github.com/DevonTM/wg-rp/pkg/bufferpool"
 
 	"golang.zx2c4.com/wireguard/tun/netstack"
 )
