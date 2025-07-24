@@ -385,8 +385,9 @@ func (ps *ProxyServer) handleHeartbeat(w http.ResponseWriter, r *http.Request) {
 	var req api.HeartbeatRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response := api.HeartbeatResponse{
-			Success: false,
-			Message: fmt.Sprintf("Invalid request body: %v", err),
+			Success:           false,
+			Message:           fmt.Sprintf("Invalid request body: %v", err),
+			ServerStartupTime: ps.startupTime.Unix(),
 		}
 		w.WriteHeader(http.StatusBadRequest)
 		w.Header().Set("Content-Type", "application/json")
