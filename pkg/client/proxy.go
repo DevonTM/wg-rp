@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"math/rand/v2"
 	"net"
@@ -15,6 +14,7 @@ import (
 	"time"
 
 	"wg-rp/pkg/api"
+	"wg-rp/pkg/bufferpool"
 	"wg-rp/pkg/utils"
 
 	"golang.zx2c4.com/wireguard/tun/netstack"
@@ -39,10 +39,11 @@ type ProxyClient struct {
 	maxHeartbeatFails int
 	shutdownChan      chan struct{}
 	serverStartupTime int64
+	bufferPool        *bufferpool.BufferPool
 }
 
 // NewProxyClient creates a new proxy client
-func NewProxyClient(tnet *netstack.Net, serverIP string, clientIP string) *ProxyClient {
+func NewProxyClient(tnet *netstack.Net, serverIP string, clientIP string, bufferSize int) *ProxyClient {
 	// Use Protocols to enable HTTP/2 support
 	protocols := new(http.Protocols)
 	protocols.SetUnencryptedHTTP2(true)
@@ -64,6 +65,7 @@ func NewProxyClient(tnet *netstack.Net, serverIP string, clientIP string) *Proxy
 		httpClient:        httpClient,
 		maxHeartbeatFails: 3,
 		shutdownChan:      make(chan struct{}),
+		bufferPool:        bufferpool.NewBufferPool(bufferSize),
 	}
 }
 
@@ -214,13 +216,13 @@ func (pc *ProxyClient) handleRouteConnection(tunnelConn net.Conn, mapping RouteM
 
 	go func() {
 		defer wg.Done()
-		io.Copy(localConn, tunnelConn)
+		pc.bufferPool.CopyWithBuffer(localConn, tunnelConn)
 		localConn.Close()
 	}()
 
 	go func() {
 		defer wg.Done()
-		io.Copy(tunnelConn, localConn)
+		pc.bufferPool.CopyWithBuffer(tunnelConn, localConn)
 		tunnelConn.Close()
 	}()
 

@@ -21,6 +21,7 @@ The new architecture eliminates the need for manual port configuration on the se
 - `pkg/server/`: Server-side proxy and API handling
 - `pkg/client/`: Client-side proxy and API communication
 - `pkg/api/`: Shared API types and structures
+- `pkg/bufferpool/`: Efficient buffer pool for I/O operations
 - `pkg/utils/`: Utility functions
 
 ### Binaries
@@ -38,6 +39,9 @@ The new architecture eliminates the need for manual port configuration on the se
 
 # Start server with custom config and verbose logging
 ./bin/rps -c wg-server.conf -v
+
+# Start server with custom buffer size (128KB for high-traffic scenarios)
+./bin/rps -c wg-server.conf -b 128
 
 # Show version
 ./bin/rps -V
@@ -60,8 +64,11 @@ The server:
 # Multiple port mappings
 ./bin/rpc -r localhost:8080-8080 -r localhost:3000-3000
 
-# With custom config and verbose logging
-./bin/rpc -c wg-client.conf -v -r localhost:8080-8080
+# With custom config, verbose logging, and optimized buffer size
+./bin/rpc -c wg-client.conf -v -b 128 -r localhost:8080-8080
+
+# For high-throughput applications (file transfers, video streaming)
+./bin/rpc -c wg-client.conf -b 256 -r localhost:8080-8080
 
 # Show version
 ./bin/rpc -V
@@ -149,18 +156,29 @@ External Client -> Server:8080 -> WireGuard Tunnel -> Client:random_port -> loca
 - **Security**: Only WireGuard port is exposed externally
 - **Scalability**: Easy to add/remove services without server restart
 - **Clean Architecture**: Separated concerns with dedicated packages
+- **Optimized I/O**: Buffer pool implementation for efficient connection copying
+- **Configurable Performance**: Adjustable buffer sizes for different use cases
+- **Memory Efficient**: Reusable buffer pools reduce garbage collection pressure
 - **Graceful Shutdown**: Proper cleanup on client termination
 
 ## Example Usage
 
 1. Start the server:
 ```bash
+# Default configuration
 ./bin/rps -c wg-server.conf
+
+# For high-traffic scenarios, use larger buffer size
+./bin/rps -c wg-server.conf -b 256
 ```
 
 2. Start the client to expose a local web server:
 ```bash
+# Default configuration
 ./bin/rpc -c wg-client.conf -r localhost:8080-8080
+
+# With matching buffer size for optimal performance
+./bin/rpc -c wg-client.conf -b 256 -r localhost:8080-8080
 ```
 
 3. Access the service externally:
@@ -169,3 +187,47 @@ curl http://server-ip:8080
 ```
 
 The request will be tunneled through WireGuard to the client's localhost:8080 service.
+
+## Performance Tuning
+
+### Buffer Size Configuration
+
+Both the server and client support configurable buffer sizes for I/O operations using the `-b` flag:
+
+```bash
+# Default buffer size (64KB) - good for most applications
+./bin/rps -c wg-server.conf
+./bin/rpc -c wg-client.conf -r localhost:8080-8080
+
+# Small buffer (32KB) - saves memory for low-traffic services
+./bin/rps -c wg-server.conf -b 32
+./bin/rpc -c wg-client.conf -b 32 -r localhost:8080-8080
+
+# Large buffer (256KB) - better performance for high-throughput applications
+./bin/rps -c wg-server.conf -b 256
+./bin/rpc -c wg-client.conf -b 256 -r localhost:8080-8080
+```
+
+### Buffer Size Recommendations
+
+| Use Case | Recommended Buffer Size | Reasoning |
+|----------|------------------------|-----------|
+| Web services (HTTP/HTTPS) | 64KB (default) | Balanced performance and memory usage |
+| File transfers (FTP, SCP) | 256KB - 512KB | Large sequential reads/writes benefit from bigger buffers |
+| Game servers | 32KB - 64KB | Small, frequent packets don't need large buffers |
+| Database connections | 64KB - 128KB | Mixed workload with moderate data sizes |
+| Video streaming | 256KB - 1MB | High bandwidth with large continuous data |
+| IoT/sensor data | 16KB - 32KB | Small, infrequent data transmissions |
+
+### Memory vs Performance Trade-off
+
+- **Smaller buffers (16-64KB)**: Use less memory, suitable for memory-constrained environments or many concurrent connections
+- **Larger buffers (128KB+)**: Better throughput for high-bandwidth applications, but use more memory per connection
+
+### Buffer Pool Implementation
+
+The system uses an efficient buffer pool that:
+- **Reuses buffers**: Reduces garbage collection pressure
+- **Thread-safe**: Safe for concurrent use across multiple connections
+- **Automatic cleanup**: Buffers are automatically returned to the pool after use
+- **Zero-copy optimization**: Uses `io.CopyBuffer` for efficient data transfer

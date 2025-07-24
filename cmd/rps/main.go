@@ -15,10 +15,12 @@ func main() {
 	var configFile string
 	var verbose bool
 	var showVersion bool
+	var bufferSizeKB int
 
 	flag.StringVar(&configFile, "c", "wg-server.conf", "WireGuard configuration file")
 	flag.BoolVar(&verbose, "v", false, "Enable verbose logging on WireGuard device")
 	flag.BoolVar(&showVersion, "V", false, "Show version and exit")
+	flag.IntVar(&bufferSizeKB, "b", 64, "Buffer size for i/o operations (in KB, minimum 1KB)")
 	flag.Parse()
 
 	// Handle version flag
@@ -26,6 +28,14 @@ func main() {
 		fmt.Printf("wg-rp server version %s\n", wgrp.VERSION)
 		os.Exit(0)
 	}
+
+	// Validate buffer size
+	if bufferSizeKB < 1 {
+		log.Fatal("Buffer size must be at least 1KB")
+	}
+
+	// Convert KB to bytes
+	bufferSize := bufferSizeKB * 1024
 
 	// Print version on startup
 	log.Printf("wg-rp server version %s starting...", wgrp.VERSION)
@@ -44,7 +54,7 @@ func main() {
 	defer wgDevice.Close()
 
 	// Create proxy server
-	proxyServer := server.NewProxyServer(wgDevice.Tnet)
+	proxyServer := server.NewProxyServer(wgDevice.Tnet, bufferSize)
 
 	// Start API server
 	if err := proxyServer.StartAPIServer(); err != nil {

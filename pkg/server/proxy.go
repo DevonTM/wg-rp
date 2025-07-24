@@ -3,7 +3,6 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"net/http"
@@ -12,6 +11,7 @@ import (
 	"time"
 
 	"wg-rp/pkg/api"
+	"wg-rp/pkg/bufferpool"
 	"wg-rp/pkg/utils"
 
 	"golang.zx2c4.com/wireguard/tun/netstack"
@@ -24,6 +24,7 @@ type ProxyServer struct {
 	clients     map[string]*ClientInfo // clientIP -> client info
 	mu          sync.RWMutex
 	startupTime time.Time
+	bufferPool  *bufferpool.BufferPool
 }
 
 // ClientInfo tracks information about connected clients
@@ -43,12 +44,13 @@ type ProxyMapping struct {
 }
 
 // NewProxyServer creates a new proxy server
-func NewProxyServer(tnet *netstack.Net) *ProxyServer {
+func NewProxyServer(tnet *netstack.Net, bufferSize int) *ProxyServer {
 	return &ProxyServer{
 		tnet:        tnet,
 		mappings:    make(map[int]*ProxyMapping),
 		clients:     make(map[string]*ClientInfo),
 		startupTime: time.Now(),
+		bufferPool:  bufferpool.NewBufferPool(bufferSize),
 	}
 }
 
@@ -301,13 +303,13 @@ func (ps *ProxyServer) handleProxyConnection(clientConn net.Conn, mapping *Proxy
 
 	go func() {
 		defer wg.Done()
-		io.Copy(tunnelConn, clientConn)
+		ps.bufferPool.CopyWithBuffer(tunnelConn, clientConn)
 		tunnelConn.Close()
 	}()
 
 	go func() {
 		defer wg.Done()
-		io.Copy(clientConn, tunnelConn)
+		ps.bufferPool.CopyWithBuffer(clientConn, tunnelConn)
 		clientConn.Close()
 	}()
 
