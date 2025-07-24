@@ -22,7 +22,7 @@ func main() {
 	var showVersion bool
 
 	flag.StringVar(&configFile, "c", "wg-client.conf", "WireGuard configuration file")
-	flag.BoolVar(&verbose, "v", false, "Enable verbose logging")
+	flag.BoolVar(&verbose, "v", false, "Enable verbose logging on WireGuard device")
 	flag.BoolVar(&showVersion, "V", false, "Show version and exit")
 
 	// Custom flag for route mappings
