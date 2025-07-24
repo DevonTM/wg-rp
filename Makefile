@@ -1,6 +1,8 @@
-BINARY_DIR=bin
-RPS_BINARY=$(BINARY_DIR)/rps
-RPC_BINARY=$(BINARY_DIR)/rpc
+BINARY_DIR = bin
+RPS_BINARY = $(BINARY_DIR)/rps
+RPC_BINARY = $(BINARY_DIR)/rpc
+
+LDFLAGS := -s -w
 
 .PHONY: all build clean rps rpc install
 
@@ -12,10 +14,10 @@ $(BINARY_DIR):
 	mkdir -p $(BINARY_DIR)
 
 rps: $(BINARY_DIR)
-	go build -o $(RPS_BINARY) ./cmd/rps
+	go build -v -trimpath -ldflags "$(LDFLAGS)" -o $(RPS_BINARY) ./cmd/rps
 
 rpc: $(BINARY_DIR)
-	go build -o $(RPC_BINARY) ./cmd/rpc
+	go build -v -trimpath -ldflags "$(LDFLAGS)" -o $(RPC_BINARY) ./cmd/rpc
 
 clean:
 	rm -rf $(BINARY_DIR)
