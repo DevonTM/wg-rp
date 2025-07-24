@@ -119,8 +119,23 @@ func (pc *ProxyClient) Wait() {
 
 // generateRandomPort generates a random port number for internal use
 func (pc *ProxyClient) generateRandomPort() int {
-	// Use ports in range 10000-60000 to avoid conflicts
-	return 10000 + rand.IntN(50000)
+	for {
+		// Use ports in range 10000-60000 to avoid conflicts
+		port := 10000 + rand.IntN(50000)
+
+		// Check if this port is already used in existing mappings
+		used := false
+		for _, mapping := range pc.mappings {
+			if mapping.ClientPort == port {
+				used = true
+				break
+			}
+		}
+
+		if !used {
+			return port
+		}
+	}
 }
 
 // registerPortMapping registers a port mapping with the server via REST API
