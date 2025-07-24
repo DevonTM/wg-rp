@@ -231,3 +231,7 @@ The system uses an efficient buffer pool that:
 - **Thread-safe**: Safe for concurrent use across multiple connections
 - **Automatic cleanup**: Buffers are automatically returned to the pool after use
 - **Zero-copy optimization**: Uses `io.CopyBuffer` for efficient data transfer
+
+## License
+
+This project is licensed under the [MIT License](./LICENSE).
