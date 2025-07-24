@@ -2,41 +2,40 @@
 
 ## Server (rps) Examples
 
-### Example 1: Listen on all interfaces
+The server no longer requires port mapping flags. It automatically handles port mappings requested by clients.
+
+### Example 1: Basic server startup
 ```bash
-# Listen on all interfaces port 8080, forward to WireGuard client 10.0.0.2:25565
-./bin/rps -c wg-server.conf -a :8080-10.0.0.2:25565
+# Start server with default config
+./bin/rps
+
+# Start server with custom config
+./bin/rps -c wg-server.conf
+
+# Start server with verbose logging
+./bin/rps -c wg-server.conf -v
+
+# Show version
+./bin/rps -V
 ```
 
-### Example 2: Listen on specific IP
-```bash
-# Listen on 0.0.0.0:8080, forward to WireGuard client 10.0.0.2:25565
-./bin/rps -c wg-server.conf -a 0.0.0.0:8080-10.0.0.2:25565
-```
-
-### Example 3: Multiple mappings
-```bash
-# Multiple services
-./bin/rps -c wg-server.conf \
-  -a 0.0.0.0:8080-10.0.0.2:25565 \
-  -a :9090-10.0.0.2:8080 \
-  -a 127.0.0.1:3000-10.0.0.2:3000
-```
-
-### Example 4: IPv6 support
-```bash
-# IPv6 addresses with bracket notation
-./bin/rps -c wg-server.conf \
-  -a [::]:8080-[fd00::2]:8080 \
-  -a 0.0.0.0:9090-10.0.0.2:9090
-```
+The server will:
+- Read WireGuard configuration
+- Start WireGuard netstack
+- Listen for client connections and API requests
+- Automatically open/close ports as requested by clients
+- Monitor client health via heartbeats
+- Clean up ports when clients disconnect
 
 ## Client (rpc) Examples
 
 ### Example 1: Forward to local services
 ```bash
-# Accept traffic from WireGuard on port 25565, forward to localhost:25565
+# Expose localhost:25565 to server port 25565
 ./bin/rpc -c wg-client.conf -r localhost:25565-25565
+
+# Show version
+./bin/rpc -V
 ```
 
 ### Example 2: Multiple local services
@@ -56,6 +55,18 @@
   -r localhost:9090-9090
 ```
 
+### Example 4: Verbose logging
+```bash
+# Enable verbose logging to see connection details
+./bin/rpc -c wg-client.conf -v -r localhost:8080-8080
+```
+
+The client will:
+- Check server availability before starting
+- Register port mappings with the server
+- Start heartbeat mechanism (every 30 seconds)
+- Handle graceful shutdown with cleanup
+
 ## Complete Setup Example
 
 1. **Generate keys:**
@@ -67,7 +78,7 @@
 
 3. **Start the server (on public machine):**
    ```bash
-   ./bin/rps -c wg-server.conf -a 0.0.0.0:8080-10.0.0.2:25565
+   ./bin/rps -c wg-server.conf
    ```
 
 4. **Start the client (on private machine behind NAT):**
@@ -82,30 +93,36 @@
    telnet public_server_ip 8080
    ```
 
+The client will automatically:
+- Check if server is available
+- Register port 8080 with the server
+- Start sending heartbeats to maintain the connection
+- Clean up the mapping when it shuts down
+
 ## Flag Format Details
 
-### Server (-a flag): `listen_ip:listen_port-target_ip:target_port`
-- `listen_ip`: IP to listen on (empty = all interfaces)
-- `listen_port`: Port to listen on publicly
-- `target_ip`: WireGuard client IP to forward to (supports IPv6 with brackets)
-- `target_port`: Port on WireGuard client to forward to
-- Use "-" to separate listen and target parts to avoid IPv6 colon conflicts
+### Server (no flags needed)
+The server no longer requires port mapping flags. Configuration is done entirely through the WireGuard config file:
+- `-c config_file`: WireGuard configuration file (default: wg-server.conf)
+- `-v`: Enable verbose logging
+- `-V`: Show version
 
-### Client (-r flag): `target_ip:target_port-listen_port`
-- `target_ip`: Local host to forward to (supports IPv6 with brackets)
-- `target_port`: Local port to forward to
-- `listen_port`: Port to listen on WireGuard interface
-- Use "-" to separate target and listen parts to avoid IPv6 colon conflicts
+### Client (-r flag): `local_ip:local_port-remote_port`
+- `local_ip`: Local host to forward to (supports IPv6 with brackets)
+- `local_port`: Local port to forward to
+- `remote_port`: Port to expose on server
+- Use "-" to separate local and remote parts to avoid IPv6 colon conflicts
+
+Example: `-r localhost:8080-8080` means:
+- Server will listen on port 8080
+- Traffic will be forwarded to client's localhost:8080
 
 ## IPv6 Examples
 
 ### Server with IPv6:
 ```bash
-# Listen on IPv6 and forward to IPv6 target
-./bin/rps -c wg-server.conf -a [::]:8080-[fd00::2]:8080
-
-# Mixed IPv4 listen, IPv6 target
-./bin/rps -c wg-server.conf -a 0.0.0.0:8080-[fd00::2]:8080
+# Start server (automatically handles both IPv4 and IPv6)
+./bin/rps -c wg-server.conf
 ```
 
 ### Client with IPv6:
@@ -115,4 +132,30 @@
 
 # Forward to IPv4 local service
 ./bin/rpc -c wg-client.conf -r localhost:8080-8080
+
+# Mixed examples
+./bin/rpc -c wg-client.conf \
+  -r [::1]:8080-8080 \
+  -r localhost:3000-3000 \
+  -r 192.168.1.100:9090-9090
 ```
+
+## Connection Monitoring
+
+The system includes automatic connection monitoring:
+
+### Heartbeat Mechanism
+- Client sends heartbeats every 20 seconds
+- Server checks client health every 30 seconds  
+- Server considers client dead after 60 seconds without heartbeat
+- All port mappings for dead clients are automatically removed
+
+### Graceful Shutdown
+- Press Ctrl+C on client to gracefully shutdown
+- Client automatically removes all port mappings from server
+- Server immediately closes associated listening ports
+
+### Server Availability Check
+- Client checks server availability before starting
+- Fails fast if server is unreachable
+- Ensures reliable connection before port mapping setup
