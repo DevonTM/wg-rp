@@ -14,10 +14,10 @@ $(BINARY_DIR):
 	mkdir -p $(BINARY_DIR)
 
 rps: $(BINARY_DIR)
-	go build -v -trimpath -ldflags "$(LDFLAGS)" -o $(RPS_BINARY) ./cmd/rps
+	go build -v -trimpath -ldflags "$(LDFLAGS)" -o $(BINARY_DIR)/ ./cmd/rps
 
 rpc: $(BINARY_DIR)
-	go build -v -trimpath -ldflags "$(LDFLAGS)" -o $(RPC_BINARY) ./cmd/rpc
+	go build -v -trimpath -ldflags "$(LDFLAGS)" -o $(BINARY_DIR)/ ./cmd/rpc
 
 clean:
 	rm -rf $(BINARY_DIR)
