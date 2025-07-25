@@ -230,7 +230,6 @@ The system uses an efficient buffer pool that:
 - **Reuses buffers**: Reduces garbage collection pressure
 - **Thread-safe**: Safe for concurrent use across multiple connections
 - **Automatic cleanup**: Buffers are automatically returned to the pool after use
-- **Zero-copy optimization**: Uses `io.CopyBuffer` for efficient data transfer
 
 ## License
 
