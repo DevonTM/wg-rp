@@ -12,5 +12,5 @@ golang.zx2c4.com/wintun v0.0.0-20230126152724-0fa3db229ce2 h1:B82qJJgjvYKsXS9jeu
 golang.zx2c4.com/wintun v0.0.0-20230126152724-0fa3db229ce2/go.mod h1:deeaetjYA+DHMHg+sMSMI58GrEteJUUzzw7en6TJQcI=
 golang.zx2c4.com/wireguard v0.0.0-20250521234502-f333402bd9cb h1:whnFRlWMcXI9d+ZbWg+4sHnLp52d5yiIPUxMBSt4X9A=
 golang.zx2c4.com/wireguard v0.0.0-20250521234502-f333402bd9cb/go.mod h1:rpwXGsirqLqN2L0JDJQlwOboGHmptD5ZD6T2VmcqhTw=
-gvisor.dev/gvisor v0.0.0-20250723014020-312865986418 h1:BEsTCdVky1w7iii7DadOxRWVf5JlnqjlehdMDWdS5Yw=
-gvisor.dev/gvisor v0.0.0-20250723014020-312865986418/go.mod h1:i8iCZyAdwRnLZYaIi2NUL1gfNtAveqxkKAe0JfAv9Bs=
+gvisor.dev/gvisor v0.0.0-20250729204252-ebe7818ac67b h1:wQwK7oydrGI67EnRNvhkCVmLyaMlyOAP82ptpNbzFcY=
+gvisor.dev/gvisor v0.0.0-20250729204252-ebe7818ac67b/go.mod h1:i8iCZyAdwRnLZYaIi2NUL1gfNtAveqxkKAe0JfAv9Bs=
