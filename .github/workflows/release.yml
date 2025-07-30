@@ -1,0 +1,117 @@
+name: Release
+
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    strategy:
+      matrix:
+        include:
+          # Linux targets
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: 386
+          - goos: linux
+            goarch: arm64
+          - goos: linux
+            goarch: arm
+          # Windows targets
+          - goos: windows
+            goarch: amd64
+          - goos: windows
+            goarch: 386
+          - goos: windows
+            goarch: arm64
+          # macOS targets
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          # FreeBSD targets
+          - goos: freebsd
+            goarch: amd64
+          - goos: freebsd
+            goarch: 386
+          - goos: freebsd
+            goarch: arm64
+          - goos: freebsd
+            goarch: arm
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24.5'
+
+    - name: Get project name and version
+      id: vars
+      run: |
+        PROJECT_NAME=$(basename ${{ github.repository }})
+        VERSION=${GITHUB_REF#refs/tags/}
+        echo "project_name=$PROJECT_NAME" >> $GITHUB_OUTPUT
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        
+        # Set binary extension for Windows
+        if [ "${{ matrix.goos }}" == "windows" ]; then
+          echo "ext=.exe" >> $GITHUB_OUTPUT
+        else
+          echo "ext=" >> $GITHUB_OUTPUT
+        fi
+        
+        # Create directory name with renamed architectures
+        ARCH_NAME="${{ matrix.goarch }}"
+        if [ "${{ matrix.goarch }}" == "amd64" ]; then
+          ARCH_NAME="x86_64"
+        elif [ "${{ matrix.goarch }}" == "386" ]; then
+          ARCH_NAME="x86"
+        fi
+        
+        DIR_NAME="${PROJECT_NAME}-${VERSION}-${{ matrix.goos }}-${ARCH_NAME}"
+        echo "dir_name=$DIR_NAME" >> $GITHUB_OUTPUT
+
+    - name: Build binaries
+      env:
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
+        CGO_ENABLED: 0
+      run: |
+        # Create build directory
+        mkdir -p build/${{ steps.vars.outputs.dir_name }}
+        
+        # Build rps (server)
+        go build -v -trimpath -ldflags "-s -w" -o build/${{ steps.vars.outputs.dir_name }}/rps${{ steps.vars.outputs.ext }} ./cmd/rps
+        
+        # Build rpc (client)
+        go build -v -trimpath -ldflags "-s -w" -o build/${{ steps.vars.outputs.dir_name }}/rpc${{ steps.vars.outputs.ext }} ./cmd/rpc
+
+    - name: Copy additional files
+      run: |
+        # Copy LICENSE
+        cp LICENSE build/${{ steps.vars.outputs.dir_name }}/
+        
+        # Copy generate-keys.sh (for all platforms including Windows)
+        cp generate-keys.sh build/${{ steps.vars.outputs.dir_name }}/
+        
+        # Copy example usage
+        cp example-usage.md build/${{ steps.vars.outputs.dir_name }}/
+
+    - name: Create zip archive
+      run: |
+        cd build
+        zip -r ${{ steps.vars.outputs.dir_name }}.zip ${{ steps.vars.outputs.dir_name }}
+
+    - name: Upload release asset
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release upload ${{ github.event.release.tag_name }} ./build/${{ steps.vars.outputs.dir_name }}.zip
