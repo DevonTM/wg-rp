@@ -126,13 +126,13 @@ The client will automatically:
 The server automatically handles port mappings requested by clients:
 - `-c config_file`: WireGuard configuration file (default: wg-server.conf)
 - `-v`: Enable verbose logging on WireGuard device
-- `-b buffer_size`: Buffer size for I/O operations in KB (default: 64, minimum: 1)
+- `-b buffer_size`: Buffer size for I/O operations in KB (default: 32, minimum: 1)
 - `-V`: Show version and exit
 
 ### Client Flags
 - `-c config_file`: WireGuard configuration file (default: wg-client.conf)
 - `-v`: Enable verbose logging on WireGuard device
-- `-b buffer_size`: Buffer size for I/O operations in KB (default: 64, minimum: 1)
+- `-b buffer_size`: Buffer size for I/O operations in KB (default: 32, minimum: 1)
 - `-r local_ip:local_port-remote_port`: Route mapping (can be used multiple times)
 - `-V`: Show version and exit
 
@@ -148,14 +148,14 @@ Example: `-r localhost:8080-8080` means:
 
 ### Buffer Size Optimization (-b flag)
 The buffer size controls the I/O buffer used for connection copying operations:
-- **Default**: 64KB (good balance for most applications)
+- **Default**: 32KB (good balance for most applications)
 - **Small files/low traffic**: 32KB or less (saves memory)
 - **Large files/high throughput**: 128KB, 256KB, or higher (better performance)
 - **Minimum**: 1KB (enforced limit)
 - **Format**: Specify in KB (e.g., `-b 128` for 128KB buffer)
 
 Buffer size recommendations:
-- **Web services**: 64KB (default)
+- **Web services**: 32KB (default)
 - **File transfers**: 256KB or higher
 - **Game servers**: 32-64KB
 - **Database connections**: 64-128KB

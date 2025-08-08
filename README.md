@@ -195,7 +195,7 @@ The request will be tunneled through WireGuard to the client's localhost:8080 se
 Both the server and client support configurable buffer sizes for I/O operations using the `-b` flag:
 
 ```bash
-# Default buffer size (64KB) - good for most applications
+# Default buffer size (32KB) - good for most applications
 ./bin/rps -c wg-server.conf
 ./bin/rpc -c wg-client.conf -r localhost:8080-8080
 
@@ -212,7 +212,7 @@ Both the server and client support configurable buffer sizes for I/O operations 
 
 | Use Case | Recommended Buffer Size | Reasoning |
 |----------|------------------------|-----------|
-| Web services (HTTP/HTTPS) | 64KB (default) | Balanced performance and memory usage |
+| Web services (HTTP/HTTPS) | 32KB (default) | Balanced performance and memory usage |
 | File transfers (FTP, SCP) | 256KB - 512KB | Large sequential reads/writes benefit from bigger buffers |
 | Game servers | 32KB - 64KB | Small, frequent packets don't need large buffers |
 | Database connections | 64KB - 128KB | Mixed workload with moderate data sizes |

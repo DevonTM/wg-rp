@@ -23,7 +23,7 @@ func main() {
 	flag.StringVar(&configFile, "c", "wg-client.conf", "WireGuard configuration file")
 	flag.BoolVar(&verbose, "v", false, "Enable verbose logging on WireGuard device")
 	flag.BoolVar(&showVersion, "V", false, "Show version and exit")
-	flag.IntVar(&bufferSizeKB, "b", 64, "Buffer size for i/o operations (in KB, minimum 1KB)")
+	flag.IntVar(&bufferSizeKB, "b", 32, "Buffer size for i/o operations (in KB, minimum 1KB)")
 
 	// Custom flag for route mappings
 	var routeFlags utils.ArrayFlags
