@@ -11,5 +11,5 @@ require (
 	golang.org/x/sys v0.35.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
 	golang.zx2c4.com/wintun v0.0.0-20230126152724-0fa3db229ce2 // indirect
-	gvisor.dev/gvisor v0.0.0-20250807194038-c9af560a03d9 // indirect
+	gvisor.dev/gvisor v0.0.0-20250814200850-35ffc9bcab55 // indirect
 )
